@@ -1,12 +1,12 @@
 # `ProtoObject`
 
-| Field           | Value                                                      |
-|-----------------|------------------------------------------------------------|
-| DIP:            | TBA                                                        |
-| Author:         | Andrei Alexandrescu (andrei@erdani.com)                    |
-| Review Count:   | 0 [Most Recent]                                            |
-| Implementation: | n/a                                                        |
-| Status:         | Draft                                                      |
+| Field           | Value                                                                          |
+|-----------------|--------------------------------------------------------------------------------|
+| DIP:            | TBA                                                                            |
+| Author:         | Andrei Alexandrescu (andrei@erdani.com), Eduard Staniloiu (edi33416@gmail.com) |
+| Review Count:   | 0 [Most Recent]                                                                |
+| Implementation: | n/a                                                                            |
+| Status:         | Draft                                                                          |
 
 ## Abstract
 
@@ -106,6 +106,81 @@ In C#, the [Monitor](https://docs.microsoft.com/en-us/dotnet/api/system.threadin
 C# has a smaller number of *imposed* methods, but they are still imposed, and `toString` will continue to be GC dependent.
 
 ### Rust
+
+Rust has a different approach: data aggregates (structs, enums and tuples) are all unrelated types. You can define methods on them, and make the data itself private, all the usual tactics of encapsulation, but there is no subtyping and no inheritance of data.
+
+The relationships between various data types in Rust are established using traits. Before delving into `traits`, let's have a look at how one can define a method in Rust.
+
+Structs in Rust can have methods attached to them. The methods for structs in Rust are surrounded by an impl block, like in the following example:
+
+```
+struct Address
+{
+    street: String,
+    city : String
+}
+
+impl Address 
+{
+    fn printInfo(&self)
+    {
+        println!("{} , {}", self.street, self.city);
+    }
+}
+```
+
+Rust `Traits` are like interfaces in OOP languages, and they must be implemented, using `impl`, for the desired type.
+An example is worth a thousand words:
+```
+trait Quack {
+    fn quack(&self);
+}
+
+struct Duck ();
+
+impl Quack for Duck {
+    fn quack(&self) {
+        println!("quack!");
+    }
+}
+
+struct RandomBird {
+    is_a_parrot: bool
+}
+
+impl Quack for RandomBird {
+    fn quack(&self) {
+        if ! self.is_a_parrot {
+            println!("quack!");
+        } else {
+            println!("squawk!");
+        }
+    }
+}
+
+let duck1 = Duck();
+let duck2 = RandomBird{is_a_parrot: false};
+let parrot = RandomBird{is_a_parrot: true};
+
+let ducks: Vec<&Quack> = vec![&duck1,&duck2,&parrot];
+
+for d in &ducks {
+    d.quack();
+}
+// quack!
+// quack!
+// squawk!
+```
+Rust traits allow traditional polymorphic OOP through interface inheritance.
+
+Summary:
+ * The role played by class is shared between data and traits
+ * Structs and enums are just layouts, although you can define methods and do data hiding 
+ * Traits don't have any data, but can be implemented for any type (not just structs)
+ * Traits can inherit from other traits
+ * Traits can have provided methods, allowing interface code re-use
+ * Traits give you both virtual methods (polymorphism) and generic constraints (monomorphism)
+
 
 ## `ProtoObject`
 
