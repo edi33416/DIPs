@@ -339,11 +339,11 @@ An order is a total order if it is (for all a, b and c):
         }
     }
 
-    auto w1 = new Widget(10, 20);                                                                                                                                                                                  
+    auto w1 = new Widget(10, 20);
     auto w2 = new Widget(10, 21);
     assert(w1.cmp(w2) != 0);
     
-    auto w3 = new Widget(10, 20);                                                                                                                                                                                  
+    auto w3 = new Widget(10, 20);                                                                                                        
     assert(w1.cmp(w3) == 0);
 }
  ```
@@ -365,7 +365,7 @@ An order is a total order if it is (for all a, b and c):
         }
     }
 
-    auto w1 = new Widget(10, 20);                                                                                                                                                                                  
+    auto w1 = new Widget(10, 20);
     auto w2 = new Widget(10, 21);
     assert(w1.cmp(w2) == 0);
 }
@@ -388,7 +388,7 @@ An order is a total order if it is (for all a, b and c):
         }
     }
 
-    auto w1 = new Widget(10, 20);                                                                                                                                                                                  
+    auto w1 = new Widget(10, 20);
     auto w2 = new Widget(10, 21);
     assert(w1.cmp(w2) == 0);
 }
