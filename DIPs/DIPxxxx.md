@@ -173,6 +173,31 @@ for d in &ducks {
 ```
 Rust traits allow traditional polymorphic OOP through interface inheritance.
 
+The Rust standard library defines a set of default traits that define the interface for some common operations, such as ordering ([Ord](https://doc.rust-lang.org/std/cmp/trait.Ord.html), PartialOrd), equality ([Eq](https://doc.rust-lang.org/std/cmp/trait.Eq.html), PartialEq), hashing ([Hash](https://doc.rust-lang.org/std/hash/trait.Hash.html)) etc.
+
+The compiler is capable of providing basic implementations for some traits via the `#[derive]` attribute. These traits can still be manually implemented if a more complex behavior is required.
+
+The following is a list of derivable traits:
+ * Comparison traits: Eq, PartialEq, Ord, PartialOrd
+ * Clone, to create T from &T via a copy.
+ * Copy, to give a type 'copy semantics' instead of 'move semantics'
+ * Hash, to compute a hash from &T.
+ * Default, to create an empty instance of a data type.
+ * Debug, to format a value using the {:?} formatter.
+
+**Not all traits can be #[derive] ‘d**, as there isn’t a sensible default implementation for all traits.
+
+An example of a trait that can’t be derived is Display, which handles formatting for end users. You should always consider the appropriate way to display a type to an end user. What parts of the type should an end user be allowed to see? What parts would they find relevant? What format of the data would be most relevant to them? The Rust compiler doesn’t have this insight, so it can’t provide appropriate default behavior for you.
+
+Below is a simple example of using derive
+```
+// `Centimeters`, a tuple struct that can be compared
+#[derive(PartialEq, PartialOrd)]
+struct Centimeters(f64);
+```
+
+Note that the `derive` strategy requires all fields implement the passed-in trait (ex. Eq), which isn't always desired.
+
 Summary:
  * The role played by class is shared between data and traits
  * Structs and enums are just layouts, although you can define methods and do data hiding 
@@ -180,7 +205,7 @@ Summary:
  * Traits can inherit from other traits
  * Traits can have provided methods, allowing interface code re-use
  * Traits give you both virtual methods (polymorphism) and generic constraints (monomorphism)
-
+ 
 
 ## `ProtoObject`
 
@@ -230,6 +255,51 @@ class Book : ProtoObject, IComparable!Book
     }
 }
 ```
+
+### Ordering
+
+In order to be able to compare two objects, we define the `Ordered(T)` interface hierarchy.
+```
+interface Ordered(T)
+if (is(T == ProtoObject))
+{
+    const @nogc nothrow pure @safe scope
+    int cmp(scope const Ordered!ProtoObject rhs);
+}
+
+interface Ordered(T) : Ordered!ProtoObject
+if (!is(T == ProtoObject))
+{
+    static assert(is(T : ProtoObject));
+
+    const @nogc nothrow pure @safe scope
+    int cmp(scope const T rhs);
+}
+```
+
+At the root of the hierarchy sits `Ordered!ProtoObject`. This is required so we can determine if we can compare two instances of `ProtoObject`. Let's see the example
+
+```
+int __cmp(ProtoObject p1, ProtoObject p2)
+{
+  Ordered!ProtoObject o1 = cast(Ordered!ProtoObject) p1;
+  if (o1 is null) return -1; // we can't compare
+  return o1.cmp(cast(Ordered!ProtoObject) p2);
+}
+```
+As you can see in the example, if we can't dynamic cast to `Ordered!ProtoObject`, then we can't compare the instances.
+Otherwise, we can safely call the `cmp` function and let dynamic dispatch do the rest.
+
+Any other class, `class T`, that desires to be comparable, needs to extend ProtoObject and implement `Ordered!T`.
+```
+class Widget : ProtoObject, Ordered!Widget
+{
+  /* impl */
+}
+
+```
+
+
 
 ## Implementation Notes
 
