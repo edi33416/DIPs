@@ -294,13 +294,12 @@ Any other class, `class T`, that desires to be comparable, needs to extend Proto
 ```
 class Widget : ProtoObject, Ordered!Widget
 {
-  
   const @nogc nothrow pure @safe scope
   int cmp(scope const Ordered!ProtoObject rhs)
   {
     return cmp(cast(Widget) rhs);
   }
-  
+
   const @nogc nothrow pure @safe scope
   int cmp(scope const Widget rhs)
   {
@@ -309,7 +308,6 @@ class Widget : ProtoObject, Ordered!Widget
   
   /* impl */
 }
-
 ```
 As you can see, `cmp(Ordered!ProtoObject)` dynamically casts `rhs` to `T` and calls the `cmp(T)` implementation.
 
@@ -343,7 +341,7 @@ An order is a total order if it is (for all a, b and c):
     auto w2 = new Widget(10, 21);
     assert(w1.cmp(w2) != 0);
     
-    auto w3 = new Widget(10, 20);                                                                                                        
+    auto w3 = new Widget(10, 20);
     assert(w1.cmp(w3) == 0);
 }
  ```
