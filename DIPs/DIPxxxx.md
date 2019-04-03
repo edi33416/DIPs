@@ -290,15 +290,111 @@ int __cmp(ProtoObject p1, ProtoObject p2)
 As you can see in the example, if we can't dynamic cast to `Ordered!ProtoObject`, then we can't compare the instances.
 Otherwise, we can safely call the `cmp` function and let dynamic dispatch do the rest.
 
-Any other class, `class T`, that desires to be comparable, needs to extend ProtoObject and implement `Ordered!T`.
+Any other class, `class T`, that desires to be comparable, needs to extend ProtoObject and implement `Ordered!T`; this means that `T` must implement the two overloads of `cmp`: `int cmp(Ordered!ProtoObject);` and `int cmp(T);`.
 ```
 class Widget : ProtoObject, Ordered!Widget
 {
+  
+  const @nogc nothrow pure @safe scope
+  int cmp(scope const Ordered!ProtoObject rhs)
+  {
+    return cmp(cast(Widget) rhs);
+  }
+  
+  const @nogc nothrow pure @safe scope
+  int cmp(scope const Widget rhs)
+  {
+    /* actual cmp impl */
+  }
+  
   /* impl */
 }
 
 ```
+As you can see, `cmp(Ordered!ProtoObject)` dynamically casts `rhs` to `T` and calls the `cmp(T)` implementation.
 
+`Ordered` implies that implementing types form a total order.
+An order is a total order if it is (for all a, b and c):
+ * total and antisymmetric: exactly one of a < b, a == b or a > b is true; and
+ * transitive, a < b and b < c implies a < c. The same must hold for both == and >.
+ 
+ As you can expect, most of the classes that desire to implement `Ordered` will have to write some boilerplate code.
+ Inspired by Rust's `derive`, we implemented `ImplOrdered(T, bool hasCustomCompare = false, M...)` template mixin.
+ This provides the basic implementation for `Ordered!T` and more.
+ 
+ At it's most basic form, `mixin`g in `ImplOrdered!T` will go through all the members of the implementing type and compare them with `rhs`
+ ```
+ @safe unittest
+{
+    class Widget : ProtoObject, Ordered!Widget
+    {
+        mixin ImplOrdered!Widget;
+        int x;
+        int y;
+
+        this(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    auto w1 = new Widget(10, 20);                                                                                                                                                                                  
+    auto w2 = new Widget(10, 21);
+    assert(w1.cmp(w2) != 0);
+    
+    auto w3 = new Widget(10, 20);                                                                                                                                                                                  
+    assert(w1.cmp(w3) == 0);
+}
+ ```
+ 
+ In a more advanced usecase, `ImplOrdered` allows you to specify the only members that you wish to compare.
+  ```
+ @safe unittest
+{
+    class Widget : ProtoObject, Ordered!Widget
+    {
+        mixin ImplOrdered!(Widget, false, "x");
+        int x;
+        int y;
+
+        this(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    auto w1 = new Widget(10, 20);                                                                                                                                                                                  
+    auto w2 = new Widget(10, 21);
+    assert(w1.cmp(w2) == 0);
+}
+ ```
+ 
+ The final form allows the user to also provide the comparator to use for each specified member
+   ```
+ @safe unittest
+{
+    class Widget : ProtoObject, Ordered!Widget
+    {
+        mixin ImplOrdered!(Widget, true, "x", (int a, int b) => a - b);
+        int x;
+        int y;
+
+        this(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    auto w1 = new Widget(10, 20);                                                                                                                                                                                  
+    auto w2 = new Widget(10, 21);
+    assert(w1.cmp(w2) == 0);
+}
+ ```
+ 
+Implementations of `Equal` and `Ordered` must agree with each other. That is, `a.cmp(b) == 0` if and only if `a == b`. It's easy to accidentally make them disagree by deriving some of the traits and manually implementing others.
 
 
 ## Implementation Notes
